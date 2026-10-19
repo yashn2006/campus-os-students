@@ -68,10 +68,23 @@ export async function submitAttendanceScan(
       marked_at: data.marked_at || new Date().toISOString(),
     };
   } catch (err: any) {
+    let message = 'Network timeout. Saved to offline queue for auto-sync.';
+
+    if (err?.context) {
+      let body: any = null;
+      try {
+        body = await err.context.json();
+        message = body?.message || err.message || 'Edge Function returned a non-2xx status code';
+      } catch {
+        message = err.message || 'Edge Function returned a non-2xx status code';
+      }
+      console.log('Scan Edge Function failed:', err.context.status, body);
+    }
+
     console.warn('Scan Edge Function error:', err);
     return {
       success: true,
-      message: 'Network timeout. Saved to offline queue for auto-sync.',
+      message,
       marked_at: new Date().toISOString(),
       isOfflineQueued: true,
     };
